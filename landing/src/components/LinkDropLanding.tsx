@@ -1,4 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import type { Value } from "react-phone-number-input";
+import { isValidPhoneNumber } from "react-phone-number-input";
+import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
+import { SmilePlus } from "lucide-react";
+import QRCode from "qrcode";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -13,52 +18,80 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { buildWhatsAppLink, getQrDownloadFileName } from "@/lib/linkdrop";
 
 export default function LinkDropLanding() {
+	const [phone, setPhone] = useState<Value>();
+	const [customMessage, setCustomMessage] = useState("");
 	const [generatedLink, setGeneratedLink] = useState("");
+	const [qrCodeUrl, setQrCodeUrl] = useState("");
 	const [error, setError] = useState("");
 	const [copyStatus, setCopyStatus] = useState("Copy link");
 	const [missingFields, setMissingFields] = useState({
 		phone: false,
-		product: false,
+		customMessage: false,
 	});
+	const messageRef = useRef<HTMLTextAreaElement>(null);
 
-	function buildLink(event: React.FormEvent<HTMLFormElement>) {
+	async function buildLink(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		setCopyStatus("Copy link");
 
-		const formData = new FormData(event.currentTarget);
-		const phone = String(formData.get("phone") || "");
-		const product = String(formData.get("product") || "");
-		const price = String(formData.get("price") || "");
-		const customMessage = String(formData.get("customMessage") || "");
-		const sanitizedPhone = phone.replace(/\D/g, "");
-		const trimmedProduct = product.trim();
-		const trimmedPrice = price.trim();
-		const trimmedCustomMessage = customMessage.trim();
+		const trimmedMessage = customMessage.trim();
 		const missing = {
-			phone: !sanitizedPhone,
-			product: !trimmedProduct,
+			phone: !phone || !isValidPhoneNumber(phone),
+			customMessage: !trimmedMessage,
 		};
 
 		setMissingFields(missing);
 
-		if (missing.phone || missing.product) {
-			setError("Add a WhatsApp phone number and product name before building your link.");
+		if (missing.phone || missing.customMessage) {
+			setError("Add a valid WhatsApp phone number and message before building your link.");
 			setGeneratedLink("");
+			setQrCodeUrl("");
 			return;
 		}
 
-		const message = trimmedCustomMessage
-			? trimmedCustomMessage
-			: trimmedPrice
-				? `Hi, I want to buy ${trimmedProduct} for ${trimmedPrice}`
-				: `Hi, I want to buy ${trimmedProduct}`;
+		const link = buildWhatsAppLink({
+			phone,
+			customMessage,
+		});
+		const qrCode = await QRCode.toDataURL(link, {
+			errorCorrectionLevel: "M",
+			margin: 2,
+			width: 640,
+		});
 
 		setError("");
-		setGeneratedLink(`https://wa.me/${sanitizedPhone}?text=${encodeURIComponent(message)}`);
+		setGeneratedLink(link);
+		setQrCodeUrl(qrCode);
+	}
+
+	function insertEmoji(emojiData: EmojiClickData) {
+		const emoji = emojiData.emoji;
+		const textarea = messageRef.current;
+
+		if (!textarea) {
+			setCustomMessage((currentMessage) => `${currentMessage}${emoji}`);
+			return;
+		}
+
+		const selectionStart = textarea.selectionStart ?? customMessage.length;
+		const selectionEnd = textarea.selectionEnd ?? customMessage.length;
+		const nextMessage =
+			customMessage.slice(0, selectionStart) + emoji + customMessage.slice(selectionEnd);
+		const nextCursorPosition = selectionStart + emoji.length;
+
+		setCustomMessage(nextMessage);
+
+		window.requestAnimationFrame(() => {
+			textarea.focus();
+			textarea.setSelectionRange(nextCursorPosition, nextCursorPosition);
+		});
 	}
 
 	function copyLink() {
@@ -80,16 +113,6 @@ export default function LinkDropLanding() {
 		}
 	}
 
-	function copyLinkFromPointer(event: React.PointerEvent<HTMLButtonElement>) {
-		event.preventDefault();
-		copyLink();
-	}
-
-	function copyLinkFromMouse(event: React.MouseEvent<HTMLButtonElement>) {
-		event.preventDefault();
-		copyLink();
-	}
-
 	function copyWithFallback(value: string) {
 		const textarea = document.createElement("textarea");
 		textarea.value = value;
@@ -100,6 +123,17 @@ export default function LinkDropLanding() {
 		textarea.select();
 		document.execCommand("copy");
 		document.body.removeChild(textarea);
+	}
+
+	function downloadQrCode() {
+		if (!qrCodeUrl) {
+			return;
+		}
+
+		const anchor = document.createElement("a");
+		anchor.href = qrCodeUrl;
+		anchor.download = getQrDownloadFileName();
+		anchor.click();
 	}
 
 	return (
@@ -126,11 +160,11 @@ export default function LinkDropLanding() {
 					<div className="flex flex-col gap-8">
 						<div className="flex max-w-2xl flex-col gap-6">
 							<h1 className="max-w-3xl text-5xl font-semibold leading-[1.02] tracking-normal text-foreground sm:text-6xl lg:text-7xl">
-								Launch product chats in one tap
+								Launch WhatsApp chats in one tap
 							</h1>
 							<p className="max-w-xl text-lg leading-8 text-muted-foreground sm:text-xl">
-								Turn Instagram posts, catalog items, stories, and DM replies into a direct
-								WhatsApp buying chat with a clean product link.
+								Turn posts, stories, DMs, catalogs, and printed prompts into a direct
+								WhatsApp chat with your own ready-to-send message.
 							</p>
 						</div>
 						<div className="flex flex-col gap-3 sm:flex-row">
@@ -150,7 +184,7 @@ export default function LinkDropLanding() {
 									<div className="flex flex-col gap-1.5">
 										<CardTitle>WhatsApp link generator</CardTitle>
 										<CardDescription>
-											Add product details and create a buyer-ready wa.me link.
+											Add a number and message to create a share-ready wa.me link.
 										</CardDescription>
 									</div>
 									<Badge variant="secondary">Local preview</Badge>
@@ -164,41 +198,55 @@ export default function LinkDropLanding() {
 									</Alert>
 								) : null}
 
-								<div className="grid gap-4 sm:grid-cols-2">
-									<div className="flex flex-col gap-2">
-										<Label htmlFor="phone">WhatsApp phone number</Label>
-										<Input
-											id="phone"
-											name="phone"
-											inputMode="tel"
-											placeholder="+91 98765 43210"
-											aria-invalid={missingFields.phone}
-										/>
-									</div>
-									<div className="flex flex-col gap-2">
-										<Label htmlFor="product">Product name</Label>
-										<Input
-											id="product"
-											name="product"
-											placeholder="Handmade linen tote"
-											aria-invalid={missingFields.product}
-										/>
-									</div>
+								<div className="flex flex-col gap-2">
+									<Label htmlFor="phone">WhatsApp phone number</Label>
+									<PhoneInput
+										id="phone"
+										name="phone"
+										defaultCountry="IN"
+										value={phone}
+										onChange={setPhone}
+										placeholder="+91 98765 43210"
+										aria-invalid={missingFields.phone}
+									/>
 								</div>
 
-								<div className="grid gap-4 sm:grid-cols-[0.55fr_1fr]">
-									<div className="flex flex-col gap-2">
-										<Label htmlFor="price">Price</Label>
-										<Input id="price" name="price" placeholder="Rs. 1,499" />
+								<div className="flex flex-col gap-2">
+									<div className="flex items-center justify-between gap-3">
+										<Label htmlFor="custom-message">Message</Label>
+										<Popover>
+											<PopoverTrigger asChild>
+												<Button
+													type="button"
+													variant="outline"
+													size="sm"
+													aria-label="Insert emoji"
+													title="Insert emoji"
+												>
+													<SmilePlus aria-hidden="true" />
+													Emoji
+												</Button>
+											</PopoverTrigger>
+											<PopoverContent align="end" className="w-[min(22rem,calc(100vw-2rem))] p-0">
+												<EmojiPicker
+													width="100%"
+													height={360}
+													previewConfig={{ showPreview: false }}
+													onEmojiClick={insertEmoji}
+												/>
+											</PopoverContent>
+										</Popover>
 									</div>
-									<div className="flex flex-col gap-2">
-										<Label htmlFor="custom-message">Custom message</Label>
-										<Textarea
-											id="custom-message"
-											name="customMessage"
-											placeholder="Hi, I want to buy the linen tote from your catalog."
-										/>
-									</div>
+									<Textarea
+										ref={messageRef}
+										id="custom-message"
+										name="customMessage"
+										value={customMessage}
+										onChange={(event) => setCustomMessage(event.target.value)}
+										placeholder="Hi, I want to place an order from your catalog."
+										aria-invalid={missingFields.customMessage}
+										className="min-h-28"
+									/>
 								</div>
 
 								<Separator />
@@ -212,6 +260,25 @@ export default function LinkDropLanding() {
 										placeholder="Build a link to see the wa.me URL"
 									/>
 								</div>
+
+								{generatedLink ? (
+									<div className="grid gap-4 rounded-lg border bg-secondary/50 p-4 sm:grid-cols-[160px_1fr] sm:items-center">
+										<div className="flex aspect-square items-center justify-center rounded-md border bg-background p-3">
+											<img
+												src={qrCodeUrl}
+												alt="QR code for the generated WhatsApp link"
+												className="size-full"
+											/>
+										</div>
+										<div className="flex flex-col gap-2">
+											<Badge variant="outline">Share-ready QR</Badge>
+											<p className="text-sm leading-6 text-muted-foreground">
+												Download this QR code for print cards, packages, story highlights, or
+												in-store displays. Scanning it opens the same WhatsApp chat.
+											</p>
+										</div>
+									</div>
+								) : null}
 							</CardContent>
 							<CardFooter className="flex flex-col gap-3 sm:flex-row">
 								<Button className="w-full sm:w-auto" type="submit">
@@ -222,8 +289,6 @@ export default function LinkDropLanding() {
 									type="button"
 									variant="secondary"
 									disabled={!generatedLink}
-									onMouseDown={copyLinkFromMouse}
-									onPointerDown={copyLinkFromPointer}
 									onClick={copyLink}
 								>
 									{copyStatus}
@@ -238,6 +303,15 @@ export default function LinkDropLanding() {
 										Open in WhatsApp
 									</a>
 								</Button>
+								<Button
+									className="w-full sm:w-auto"
+									type="button"
+									variant="outline"
+									disabled={!qrCodeUrl}
+									onClick={downloadQrCode}
+								>
+									Download QR
+								</Button>
 							</CardFooter>
 						</Card>
 					</form>
@@ -250,26 +324,28 @@ export default function LinkDropLanding() {
 								How it works
 							</h2>
 							<p className="text-base leading-7 text-muted-foreground">
-								LinkDrop does one job now: it builds a WhatsApp product link you can share
-								where buyers already discover your products.
+								LinkDrop builds one static WhatsApp link you can share anywhere buyers
+								already find you.
 							</p>
 						</div>
 						<div className="grid gap-4 md:grid-cols-3">
 							<Card>
 								<CardHeader>
 									<Badge variant="outline">Step 1</Badge>
-									<CardTitle>Add product details</CardTitle>
+									<CardTitle>Add your number</CardTitle>
 									<CardDescription>
-										Enter the seller number, product name, optional price, and message.
+										Choose the country code and enter the WhatsApp number that should receive
+										buyer chats.
 									</CardDescription>
 								</CardHeader>
 							</Card>
 							<Card>
 								<CardHeader>
 									<Badge variant="outline">Step 2</Badge>
-									<CardTitle>Generate the WhatsApp link</CardTitle>
+									<CardTitle>Write the message</CardTitle>
 									<CardDescription>
-										The generator strips phone formatting and encodes the buyer message.
+										Create the exact chat starter buyers will see, including emoji when it
+										fits your brand.
 									</CardDescription>
 								</CardHeader>
 							</Card>
@@ -278,7 +354,8 @@ export default function LinkDropLanding() {
 									<Badge variant="outline">Step 3</Badge>
 									<CardTitle>Share it with buyers</CardTitle>
 									<CardDescription>
-										Use the link in stories, catalogs, posts, DMs, or product notes.
+										Copy the link, open it in WhatsApp, or download the QR code for packaging
+										and displays.
 									</CardDescription>
 								</CardHeader>
 							</Card>
@@ -289,11 +366,10 @@ export default function LinkDropLanding() {
 				<section className="mx-auto flex w-full max-w-7xl flex-col items-start justify-between gap-6 px-5 py-14 sm:px-8 md:flex-row md:items-center">
 					<div className="flex max-w-2xl flex-col gap-2">
 						<h2 className="text-2xl font-semibold tracking-normal text-foreground sm:text-3xl">
-							Build your next product link
+							Build your next WhatsApp link
 						</h2>
 						<p className="text-muted-foreground">
-							Create a direct WhatsApp chat URL and place it wherever buyers ask about your
-							products.
+							Create a direct chat URL and place it wherever buyers are ready to ask.
 						</p>
 					</div>
 					<Button asChild size="lg">
