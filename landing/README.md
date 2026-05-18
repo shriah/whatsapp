@@ -1,46 +1,36 @@
-# Astro Starter Kit: Basics
+# Link Basket
 
-```sh
-npm create astro@latest -- --template basics
-```
+Link Basket is a static Astro landing site and browser-only WhatsApp link generator. It creates `https://wa.me/<digits>?text=<encoded message>` links from a valid WhatsApp phone number and a required message.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Features
 
-## 🚀 Project Structure
+- Create WhatsApp `wa.me` links with pre-filled messages.
+- Validate phone numbers before generating links.
+- Insert emoji into the message at the cursor.
+- Copy generated links or open them in WhatsApp.
+- Generate and download a client-side QR code PNG from the same link.
+- Serve SEO-friendly English landing-page content for WhatsApp link generator queries.
 
-Inside of your Astro project, you'll see the following folders and files:
+Link Basket does not use backend storage, accounts, analytics, uploads, WhatsApp API media sending, or server-side QR generation.
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
-```
+## Commands
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+Use Node.js `>=22.12.0` and npm.
 
-## 🧞 Commands
+| Command | Action |
+| :-- | :-- |
+| `npm install` | Install dependencies |
+| `npm run dev` | Start the Astro dev server |
+| `npm test` | Run Vitest tests |
+| `npm run build` | Build the production site to `dist/` |
+| `npm run preview` | Preview the production build |
+| `npm run astro -- --help` | Show Astro CLI help |
 
-All commands are run from the root of the project, from a terminal:
+## Project Structure
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+- `src/pages/index.astro` renders the homepage.
+- `src/layouts/Layout.astro` owns document metadata, canonical tags, social tags, and JSON-LD.
+- `src/components/LinkDropLanding.tsx` contains the interactive landing page and generator island.
+- `src/components/ui/` contains shadcn-style UI primitives.
+- `src/lib/linkdrop.ts` contains testable WhatsApp link and QR filename helpers.
+- `public/robots.txt` exposes crawl rules and the sitemap location.

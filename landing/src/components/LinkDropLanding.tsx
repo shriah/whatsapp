@@ -140,7 +140,7 @@ export default function LinkDropLanding() {
 		<div className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top_left,_color-mix(in_oklch,_var(--primary)_18%,_transparent),_transparent_34%),linear-gradient(135deg,_color-mix(in_oklch,_var(--secondary)_78%,_white),_var(--background)_45%,_color-mix(in_oklch,_var(--accent)_50%,_white))]">
 			<header className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
 				<a href="#top" className="text-lg font-semibold tracking-normal text-foreground">
-					LinkDrop
+					Link Basket
 				</a>
 				<nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground sm:flex">
 					<a className="transition-colors hover:text-foreground" href="#generator">
@@ -148,6 +148,9 @@ export default function LinkDropLanding() {
 					</a>
 					<a className="transition-colors hover:text-foreground" href="#how-it-works">
 						How it works
+					</a>
+					<a className="transition-colors hover:text-foreground" href="#faq">
+						FAQ
 					</a>
 				</nav>
 				<Button asChild size="sm">
@@ -160,11 +163,12 @@ export default function LinkDropLanding() {
 					<div className="flex flex-col gap-8">
 						<div className="flex max-w-2xl flex-col gap-6">
 							<h1 className="max-w-3xl text-5xl font-semibold leading-[1.02] tracking-normal text-foreground sm:text-6xl lg:text-7xl">
-								Launch WhatsApp chats in one tap
+								WhatsApp Link Generator
 							</h1>
 							<p className="max-w-xl text-lg leading-8 text-muted-foreground sm:text-xl">
-								Turn posts, stories, DMs, catalogs, and printed prompts into a direct
-								WhatsApp chat with your own ready-to-send message.
+								Create a WhatsApp link with a pre-filled message for posts, stories,
+								DMs, catalogs, QR codes, and printed prompts. Link Basket builds the
+								standard wa.me URL in your browser.
 							</p>
 						</div>
 						<div className="flex flex-col gap-3 sm:flex-row">
@@ -321,11 +325,12 @@ export default function LinkDropLanding() {
 					<div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-5 py-16 sm:px-8 lg:py-20">
 						<div className="flex max-w-2xl flex-col gap-3">
 							<h2 className="text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
-								How it works
+								How to create a WhatsApp link
 							</h2>
 							<p className="text-base leading-7 text-muted-foreground">
-								LinkDrop builds one static WhatsApp link you can share anywhere buyers
-								already find you.
+								Link Basket creates one static WhatsApp link you can share anywhere buyers
+								already find you. The generated URL uses WhatsApp's wa.me format and
+								does not require a backend.
 							</p>
 						</div>
 						<div className="grid gap-4 md:grid-cols-3">
@@ -363,10 +368,128 @@ export default function LinkDropLanding() {
 					</div>
 				</section>
 
+				<section className="mx-auto grid w-full max-w-7xl gap-8 px-5 py-16 sm:px-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:py-20">
+					<div className="flex min-w-0 flex-col gap-3">
+						<h2 className="text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
+							What is a WhatsApp link?
+						</h2>
+						<p className="text-base leading-7 text-muted-foreground">
+							A WhatsApp link is a URL that opens a chat with a specific phone number.
+							When the link includes a text query, WhatsApp also fills the message box
+							with your chosen message so the buyer can review it and send.
+						</p>
+					</div>
+					<Card className="min-w-0">
+						<CardHeader>
+							<CardTitle>Example wa.me output</CardTitle>
+							<CardDescription>
+								Link Basket keeps the generated link simple and portable.
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<code className="block max-w-full break-all rounded-md border bg-secondary/60 p-4 text-sm text-secondary-foreground">
+								https://wa.me/919876543210?text=Hi%2C%20I%20want%20to%20order%20from%20your%20catalog
+							</code>
+						</CardContent>
+					</Card>
+				</section>
+
+				<section className="border-y bg-card/70">
+					<div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-5 py-16 sm:px-8 lg:py-20">
+						<div className="flex max-w-2xl flex-col gap-3">
+							<h2 className="text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
+								Where to use your WhatsApp link
+							</h2>
+							<p className="text-base leading-7 text-muted-foreground">
+								Use one generated link across digital and offline touchpoints so every
+								buyer starts with the same clear message.
+							</p>
+						</div>
+						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+							<Card>
+								<CardHeader>
+									<CardTitle>Seller profiles</CardTitle>
+									<CardDescription>
+										Add your WhatsApp link to Instagram bios, story stickers, marketplace
+										profiles, and saved DM replies.
+									</CardDescription>
+								</CardHeader>
+							</Card>
+							<Card>
+								<CardHeader>
+									<CardTitle>Catalogs and product posts</CardTitle>
+									<CardDescription>
+										Point buyers to a chat starter for orders, size questions, availability,
+										or delivery details.
+									</CardDescription>
+								</CardHeader>
+							</Card>
+							<Card>
+								<CardHeader>
+									<CardTitle>QR codes and print</CardTitle>
+									<CardDescription>
+										Download the QR code for flyers, packages, counters, menus, and printed
+										material that should open the same chat.
+									</CardDescription>
+								</CardHeader>
+							</Card>
+						</div>
+					</div>
+				</section>
+
+				<section id="faq" className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-5 py-16 sm:px-8 lg:py-20">
+					<div className="flex max-w-2xl flex-col gap-3">
+						<h2 className="text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
+							WhatsApp link questions
+						</h2>
+						<p className="text-base leading-7 text-muted-foreground">
+							Short answers for sellers who want a direct chat link without extra setup.
+						</p>
+					</div>
+					<div className="grid gap-4 md:grid-cols-2">
+						<Card>
+							<CardHeader>
+								<CardTitle>Do I need the WhatsApp Business API?</CardTitle>
+								<CardDescription>
+									No. Link Basket only creates a static wa.me link. Buyers open the link in
+									WhatsApp and send the message themselves.
+								</CardDescription>
+							</CardHeader>
+						</Card>
+						<Card>
+							<CardHeader>
+								<CardTitle>What phone number format should I use?</CardTitle>
+								<CardDescription>
+									Enter a valid WhatsApp number with the country code. Link Basket removes
+									spaces and symbols before building the final digits-only URL.
+								</CardDescription>
+							</CardHeader>
+						</Card>
+						<Card>
+							<CardHeader>
+								<CardTitle>Can I create a WhatsApp link with emoji?</CardTitle>
+								<CardDescription>
+									Yes. Add emoji in the message field and Link Basket encodes the text query
+									so the generated link stays shareable.
+								</CardDescription>
+							</CardHeader>
+						</Card>
+						<Card>
+							<CardHeader>
+								<CardTitle>Is the QR code based on the same link?</CardTitle>
+								<CardDescription>
+									Yes. The QR code is generated in your browser from the exact WhatsApp
+									link shown in the generated link field.
+								</CardDescription>
+							</CardHeader>
+						</Card>
+					</div>
+				</section>
+
 				<section className="mx-auto flex w-full max-w-7xl flex-col items-start justify-between gap-6 px-5 py-14 sm:px-8 md:flex-row md:items-center">
 					<div className="flex max-w-2xl flex-col gap-2">
 						<h2 className="text-2xl font-semibold tracking-normal text-foreground sm:text-3xl">
-							Build your next WhatsApp link
+							Create a WhatsApp link now
 						</h2>
 						<p className="text-muted-foreground">
 							Create a direct chat URL and place it wherever buyers are ready to ask.

@@ -11,5 +11,5 @@ export function buildWhatsAppLink({ phone, customMessage }: LinkDropFormValues) 
 }
 
 export function getQrDownloadFileName() {
-	return "linkdrop-qr.png";
+	return "link-basket-qr.png";
 }

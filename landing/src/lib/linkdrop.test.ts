@@ -44,6 +44,6 @@ describe("buildWhatsAppLink", () => {
 
 describe("getQrDownloadFileName", () => {
 	it("uses a fixed png file name", () => {
-		expect(getQrDownloadFileName()).toBe("linkdrop-qr.png");
+		expect(getQrDownloadFileName()).toBe("link-basket-qr.png");
 	});
 });
