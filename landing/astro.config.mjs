@@ -6,7 +6,14 @@ import { defineConfig } from 'astro/config';
 
 // https://astro.build/config
 export default defineConfig({
-	site: 'https://linkdrop.app',
+	site: 'https://linkbasket.in',
+	i18n: {
+		locales: ['en', 'ms'],
+		defaultLocale: 'en',
+		routing: {
+			prefixDefaultLocale: false,
+		},
+	},
 	integrations: [react(), sitemap()],
 	vite: {
 		plugins: [tailwindcss()],

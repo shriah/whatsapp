@@ -4,6 +4,12 @@
 
 This is an Astro landing-site project for Link Basket, a static WhatsApp chat-link editor for solo sellers. Keep changes small, project-specific, and aligned with the existing Astro structure.
 
+## Domain Source Of Truth
+
+- The production domain is `https://linkbasket.in/`.
+- Sitemap URLs should be rooted at `https://linkbasket.in/`, not `https://linkdrop.app/`.
+- When updating site metadata, canonical URLs, Open Graph URLs, Astro `site` config, JSON-LD, or `robots.txt`, treat `linkbasket.in` as the source of truth.
+
 ## Site Features
 
 - The home page is a focused Link Basket landing page with a hero, editor card, how-it-works section, and final CTA.

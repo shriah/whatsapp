@@ -18,29 +18,6 @@ export type PersistedLinkDropState = {
 
 type EditablePresetValues = Pick<CustomPreset, "label" | "message">;
 
-export const BUILT_IN_PRESETS: readonly EditablePresetValues[] = [
-	{
-		label: "Order inquiry",
-		message: "Hi, I want to place an order from your catalog.",
-	},
-	{
-		label: "Catalog request",
-		message: "Hi, please share your latest catalog.",
-	},
-	{
-		label: "Price check",
-		message: "Hi, can you share the price for this item?",
-	},
-	{
-		label: "Availability check",
-		message: "Hi, is this item available right now?",
-	},
-	{
-		label: "Custom order",
-		message: "Hi, I want to discuss a custom order.",
-	},
-];
-
 export const defaultPersistedLinkDropState: PersistedLinkDropState = {
 	version: 1,
 	phone: undefined,

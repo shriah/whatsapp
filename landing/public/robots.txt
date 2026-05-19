@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://linkdrop.app/sitemap-index.xml
+Sitemap: https://linkbasket.in/sitemap-index.xml

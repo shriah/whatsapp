@@ -9,7 +9,7 @@ Link Basket is a static Astro landing site and browser-only WhatsApp link genera
 - Insert emoji into the message at the cursor.
 - Copy generated links or open them in WhatsApp.
 - Generate and download a client-side QR code PNG from the same link.
-- Serve SEO-friendly English landing-page content for WhatsApp link generator queries.
+- Serve SEO-friendly localized landing pages for English and Malay WhatsApp link generator queries.
 
 Link Basket does not use backend storage, accounts, analytics, uploads, WhatsApp API media sending, or server-side QR generation.
 
@@ -28,9 +28,10 @@ Use Node.js `>=22.12.0` and npm.
 
 ## Project Structure
 
-- `src/pages/index.astro` renders the homepage.
-- `src/layouts/Layout.astro` owns document metadata, canonical tags, social tags, and JSON-LD.
+- `src/pages/index.astro` renders the English homepage and `src/pages/ms/index.astro` renders the Malay homepage.
+- `src/layouts/Layout.astro` owns localized document metadata, canonical tags, alternate language tags, social tags, and JSON-LD.
 - `src/components/LinkDropLanding.tsx` contains the interactive landing page and generator island.
 - `src/components/ui/` contains shadcn-style UI primitives.
+- `src/lib/i18n.ts` contains the locale dictionaries and route helpers.
 - `src/lib/linkdrop.ts` contains testable WhatsApp link and QR filename helpers.
 - `public/robots.txt` exposes crawl rules and the sitemap location.

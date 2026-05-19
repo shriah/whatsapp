@@ -21,10 +21,10 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import type { Locale, LocaleContent } from "@/lib/i18n";
 import { buildWhatsAppLink, getQrDownloadFileName } from "@/lib/linkdrop";
 import {
 	addRecentMessage,
-	BUILT_IN_PRESETS,
 	createCustomPreset,
 	defaultPersistedLinkDropState,
 	deleteCustomPreset,
@@ -44,7 +44,12 @@ function createPresetId() {
 	return `preset-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export default function LinkDropLanding() {
+type LinkDropLandingProps = {
+	locale: Locale;
+	content: LocaleContent["landing"];
+};
+
+export default function LinkDropLanding({ locale, content }: LinkDropLandingProps) {
 	const [phone, setPhone] = useState<Value>();
 	const [customMessage, setCustomMessage] = useState("");
 	const [recentMessages, setRecentMessages] = useState<string[]>([]);
@@ -57,7 +62,7 @@ export default function LinkDropLanding() {
 	const [generatedLink, setGeneratedLink] = useState("");
 	const [qrCodeUrl, setQrCodeUrl] = useState("");
 	const [buildError, setBuildError] = useState("");
-	const [copyStatus, setCopyStatus] = useState("Copy link");
+	const [copyStatus, setCopyStatus] = useState(content.results.copyIdle);
 	const [hasAttemptedBuild, setHasAttemptedBuild] = useState(false);
 	const [isBuilding, setIsBuilding] = useState(false);
 	const [hasHydratedPersistedState, setHasHydratedPersistedState] = useState(false);
@@ -71,10 +76,11 @@ export default function LinkDropLanding() {
 	const isPhoneMissing = hasAttemptedBuild && (!phone || !isValidPhoneNumber(phone));
 	const isMessageMissing = hasAttemptedBuild && !trimmedMessage;
 	const validationError =
-		isPhoneMissing || isMessageMissing
-			? "Add a valid WhatsApp phone number and message before building your link."
-			: "";
+		isPhoneMissing || isMessageMissing ? content.form.error.validation : "";
 	const error = buildError || validationError;
+
+	const englishPath = "/";
+	const malayPath = "/ms/";
 
 	useEffect(() => {
 		return () => {
@@ -119,7 +125,7 @@ export default function LinkDropLanding() {
 			copyStatusTimeoutRef.current = null;
 		}
 
-		setCopyStatus("Copy link");
+		setCopyStatus(content.results.copyIdle);
 	}
 
 	async function buildLink(event: React.FormEvent<HTMLFormElement>) {
@@ -165,7 +171,7 @@ export default function LinkDropLanding() {
 			}
 
 			clearGeneratedOutput();
-			setBuildError("We couldn't generate the QR code right now. Try again.");
+			setBuildError(content.form.error.qr);
 		} finally {
 			if (buildRequestRef.current === currentBuildRequest) {
 				setIsBuilding(false);
@@ -201,12 +207,12 @@ export default function LinkDropLanding() {
 			return;
 		}
 
-		setCopyStatus("Copied");
+		setCopyStatus(content.results.copyDone);
 		if (copyStatusTimeoutRef.current) {
 			window.clearTimeout(copyStatusTimeoutRef.current);
 		}
 		copyStatusTimeoutRef.current = window.setTimeout(() => {
-			setCopyStatus("Copy link");
+			setCopyStatus(content.results.copyIdle);
 			copyStatusTimeoutRef.current = null;
 		}, 1800);
 
@@ -315,22 +321,49 @@ export default function LinkDropLanding() {
 		<div className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top_left,_color-mix(in_oklch,_var(--primary)_14%,_transparent),_transparent_36%),linear-gradient(180deg,_color-mix(in_oklch,_var(--secondary)_80%,_white),_var(--background)_34%,_color-mix(in_oklch,_var(--accent)_34%,_white))]">
 			<header className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
 				<a href="#top" className="text-lg font-semibold tracking-normal text-foreground">
-					Link Basket
+					{content.brandName}
 				</a>
-				<nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground sm:flex">
+				<nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground md:flex">
 					<a className="transition-colors hover:text-foreground" href="#generator">
-						Generator
+						{content.nav.generator}
 					</a>
 					<a className="transition-colors hover:text-foreground" href="#how-it-works">
-						How it works
+						{content.nav.howItWorks}
 					</a>
 					<a className="transition-colors hover:text-foreground" href="#faq">
-						FAQ
+						{content.nav.faq}
 					</a>
 				</nav>
-				<Button asChild size="sm">
-					<a href="#generator">Start free</a>
-				</Button>
+				<div className="flex items-center gap-2">
+					<div
+						className="hidden items-center gap-1 rounded-full border border-border/70 bg-background/80 p-1 text-xs font-medium text-muted-foreground sm:flex"
+						aria-label={content.languageSwitcher.label}
+					>
+						<a
+							href={englishPath}
+							className={cn(
+								"rounded-full px-3 py-1 transition-colors",
+								locale === "en" ? "bg-foreground text-background" : "hover:text-foreground",
+							)}
+							aria-current={locale === "en" ? "page" : undefined}
+						>
+							{content.languageSwitcher.english}
+						</a>
+						<a
+							href={malayPath}
+							className={cn(
+								"rounded-full px-3 py-1 transition-colors",
+								locale === "ms" ? "bg-foreground text-background" : "hover:text-foreground",
+							)}
+							aria-current={locale === "ms" ? "page" : undefined}
+						>
+							{content.languageSwitcher.malay}
+						</a>
+					</div>
+					<Button asChild size="sm">
+						<a href="#generator">{content.hero.finalCta}</a>
+					</Button>
+				</div>
 			</header>
 
 			<main id="top">
@@ -342,22 +375,21 @@ export default function LinkDropLanding() {
 									variant="outline"
 									className="border-primary/20 bg-background/70 text-muted-foreground"
 								>
-									Static wa.me builder
+									{content.hero.badge}
 								</Badge>
 								<h1 className="font-[family-name:var(--font-display)] text-4xl font-semibold leading-[0.98] tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-									Build a WhatsApp chat link buyers can use in one tap.
+									{content.hero.title}
 								</h1>
 								<p className="max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
-									Add your number, shape the opening message, and export the same share-ready
-									wa.me link as copy, QR, or a WhatsApp launch.
+									{content.hero.description}
 								</p>
 							</div>
 							<div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
 								<Button size="lg" onClick={focusPhoneNumber}>
-									Build my link
+									{content.hero.primaryCta}
 								</Button>
 								<Button asChild variant="outline" size="lg">
-									<a href="#how-it-works">See how it works</a>
+									<a href="#how-it-works">{content.hero.secondaryCta}</a>
 								</Button>
 							</div>
 						</div>
@@ -369,11 +401,10 @@ export default function LinkDropLanding() {
 										<div className="space-y-2">
 											<div>
 												<h2 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-													WhatsApp link generator
+													{content.form.title}
 												</h2>
 												<p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-													Keep the essentials in view, then pull from presets or recent
-													builds when you need a faster starting point.
+													{content.form.description}
 												</p>
 											</div>
 										</div>
@@ -385,38 +416,38 @@ export default function LinkDropLanding() {
 										<div className="space-y-6">
 											{error ? (
 												<Alert variant="destructive">
-													<AlertTitle>Missing details</AlertTitle>
+													<AlertTitle>{content.form.error.title}</AlertTitle>
 													<AlertDescription>{error}</AlertDescription>
 												</Alert>
 											) : null}
 
 											<div className="flex flex-col gap-5">
 												<div className="flex min-w-0 flex-col gap-2">
-													<Label htmlFor="phone">WhatsApp phone number</Label>
+													<Label htmlFor="phone">{content.form.phone.label}</Label>
 													<PhoneInput
 														ref={phoneInputRef}
 														id="phone"
 														name="phone"
-														defaultCountry="IN"
+														defaultCountry={content.form.phone.defaultCountry}
 														value={phone}
 														onChange={setPhone}
-														placeholder="+91 98765 43210"
+														placeholder={content.form.phone.placeholder}
 														aria-invalid={isPhoneMissing}
 													/>
 													<p className="text-sm leading-6 text-muted-foreground">
-														Use the number buyers should reach directly in WhatsApp.
+														{content.form.phone.hint}
 													</p>
 												</div>
 
 												<div className="flex min-w-0 flex-col gap-2">
-													<Label htmlFor="custom-message">Message</Label>
+													<Label htmlFor="custom-message">{content.form.message.label}</Label>
 													<Textarea
 														ref={messageRef}
 														id="custom-message"
 														name="customMessage"
 														value={customMessage}
 														onChange={(event) => setCustomMessage(event.target.value)}
-														placeholder="Hi, I want to place an order from your catalog."
+														placeholder={content.form.message.placeholder}
 														aria-invalid={isMessageMissing}
 														className="min-h-36 resize-y"
 													/>
@@ -427,11 +458,11 @@ export default function LinkDropLanding() {
 																	type="button"
 																	variant="outline"
 																	size="sm"
-																	aria-label="Insert emoji"
-																	title="Insert emoji"
+																	aria-label={content.form.emoji.button}
+																	title={content.form.emoji.button}
 																>
 																	<SmilePlus aria-hidden="true" />
-																	Emoji
+																	{content.form.emoji.button}
 																</Button>
 															</PopoverTrigger>
 															<PopoverContent
@@ -448,22 +479,22 @@ export default function LinkDropLanding() {
 														</Popover>
 													</div>
 													<p className="text-sm leading-6 text-muted-foreground">
-														This becomes the encoded{" "}
+														{content.form.message.hint.split("text=")[0]}
+														{" "}
 														<code className="rounded bg-secondary/60 px-1 py-0.5 text-[0.8rem]">
 															text=
 														</code>{" "}
-														value in your wa.me link.
+														{content.form.message.hint.split("text=")[1]}
 													</p>
 												</div>
 											</div>
 
 											<div className="flex flex-col gap-3 border-t border-border/70 pt-5 sm:flex-row sm:items-center sm:justify-between">
 												<p className="text-sm leading-6 text-muted-foreground">
-													Phone number and message are both required before the link can be
-													built.
+													{content.form.submit.requirements}
 												</p>
 												<Button className="w-full sm:w-auto" type="submit" disabled={isBuilding}>
-													{isBuilding ? "Building..." : "Build my link"}
+													{isBuilding ? content.form.submit.loading : content.form.submit.idle}
 												</Button>
 											</div>
 
@@ -471,17 +502,18 @@ export default function LinkDropLanding() {
 												<div className="rounded-2xl border border-border/70 bg-card/75">
 													<button
 														type="button"
-														aria-label="Recent messages"
+														aria-label={content.form.recents.label}
 														className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left"
 														aria-expanded={isRecentTrayOpen}
 														aria-controls="recent-messages-panel"
 														onClick={() => setIsRecentTrayOpen((current) => !current)}
 													>
 														<div className="min-w-0">
-															<p className="font-medium text-foreground">Recent messages</p>
+															<p className="font-medium text-foreground">
+																{content.form.recents.label}
+															</p>
 															<p className="text-sm leading-6 text-muted-foreground">
-																Last successful drafts, ready to reuse without rebuilding
-																automatically.
+																{content.form.recents.description}
 															</p>
 														</div>
 														<div className="flex items-center gap-3 text-muted-foreground">
@@ -511,7 +543,7 @@ export default function LinkDropLanding() {
 																		variant="outline"
 																		size="sm"
 																		className="max-w-full justify-start text-left"
-																		aria-label={`Use recent message ${message}`}
+																		aria-label={`${content.form.recents.usePrefix} ${message}`}
 																		onClick={() => applyMessageTemplate(message)}
 																	>
 																		<span className="max-w-full truncate">{message}</span>
@@ -520,7 +552,7 @@ export default function LinkDropLanding() {
 															</div>
 														) : (
 															<p className="text-sm leading-6 text-muted-foreground">
-																Recent messages appear here after you build a valid link.
+																{content.form.recents.empty}
 															</p>
 														)}
 													</div>
@@ -529,21 +561,21 @@ export default function LinkDropLanding() {
 												<div className="rounded-2xl border border-border/70 bg-card/75">
 													<button
 														type="button"
-														aria-label="Presets"
+														aria-label={content.form.presets.label}
 														className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left"
 														aria-expanded={isPresetTrayOpen}
 														aria-controls="presets-panel"
 														onClick={() => setIsPresetTrayOpen((current) => !current)}
 													>
 														<div className="min-w-0">
-															<p className="font-medium text-foreground">Presets</p>
+															<p className="font-medium text-foreground">{content.form.presets.label}</p>
 															<p className="text-sm leading-6 text-muted-foreground">
-																Built-in openers plus your saved repeat-use chat starters.
+																{content.form.presets.description}
 															</p>
 														</div>
 														<div className="flex items-center gap-3 text-muted-foreground">
 															<span className="rounded-full border border-border/70 px-2 py-1 text-xs">
-																{BUILT_IN_PRESETS.length + customPresets.length}
+																{content.form.presets.builtIn.length + customPresets.length}
 															</span>
 															<ChevronDown
 																aria-hidden="true"
@@ -562,19 +594,19 @@ export default function LinkDropLanding() {
 														<div className="space-y-5">
 															<div className="space-y-2">
 																<div className="flex items-center justify-between gap-3">
-																	<Label>Built-in presets</Label>
+																	<Label>{content.form.presets.builtInLabel}</Label>
 																	<p className="text-xs text-muted-foreground">
-																		Apply first, then build
+																		{content.form.presets.builtInHint}
 																	</p>
 																</div>
 																<div className="flex flex-wrap gap-2">
-																	{BUILT_IN_PRESETS.map((preset) => (
+																	{content.form.presets.builtIn.map((preset) => (
 																		<Button
 																			key={preset.label}
 																			type="button"
 																			variant="outline"
 																			size="sm"
-																			aria-label={`Use preset ${preset.label}`}
+																			aria-label={`${content.form.presets.usePrefix} ${preset.label}`}
 																			onClick={() => applyMessageTemplate(preset.message)}
 																		>
 																			{preset.label}
@@ -587,30 +619,30 @@ export default function LinkDropLanding() {
 
 															<div className="space-y-4">
 																<div className="flex items-center justify-between gap-3">
-																	<Label>Custom presets</Label>
+																	<Label>{content.form.presets.customLabel}</Label>
 																	<p className="text-xs text-muted-foreground">
-																		{customPresets.length}/{MAX_CUSTOM_PRESETS} saved
+																		{customPresets.length}/{MAX_CUSTOM_PRESETS} {content.form.presets.savedSuffix}
 																	</p>
 																</div>
 
 																<div className="grid gap-3 md:grid-cols-2">
 																	<div className="flex flex-col gap-2">
-																		<Label htmlFor="preset-label">Preset label</Label>
+																		<Label htmlFor="preset-label">{content.form.presets.labelField}</Label>
 																		<Input
 																			ref={presetLabelRef}
 																			id="preset-label"
 																			value={presetLabel}
 																			onChange={(event) => setPresetLabel(event.target.value)}
-																			placeholder="Catalog follow-up"
+																			placeholder={content.form.presets.labelPlaceholder}
 																		/>
 																	</div>
 																	<div className="flex flex-col gap-2">
-																		<Label htmlFor="preset-message">Preset message</Label>
+																		<Label htmlFor="preset-message">{content.form.presets.messageField}</Label>
 																		<Input
 																			id="preset-message"
 																			value={presetMessage}
 																			onChange={(event) => setPresetMessage(event.target.value)}
-																			placeholder="Hi, can you share the latest catalog?"
+																			placeholder={content.form.presets.messagePlaceholder}
 																		/>
 																	</div>
 																</div>
@@ -622,18 +654,20 @@ export default function LinkDropLanding() {
 																		disabled={!isPresetFormValid || isCustomPresetLimitReached}
 																		onClick={savePreset}
 																	>
-																		{editingPresetId ? "Update preset" : "Add preset"}
+																		{editingPresetId
+																			? content.form.presets.updateButton
+																			: content.form.presets.addButton}
 																	</Button>
 																	{editingPresetId ? (
 																		<Button type="button" variant="outline" onClick={resetPresetForm}>
-																			Cancel edit
+																			{content.form.presets.cancelButton}
 																		</Button>
 																	) : null}
 																</div>
 
 																{isCustomPresetLimitReached ? (
 																	<p className="text-sm text-muted-foreground">
-																		You can save up to {MAX_CUSTOM_PRESETS} custom presets.
+																		{content.form.presets.limit}
 																	</p>
 																) : null}
 
@@ -657,28 +691,28 @@ export default function LinkDropLanding() {
 																						type="button"
 																						size="sm"
 																						variant="outline"
-																						aria-label={`Use preset ${preset.label}`}
+																						aria-label={`${content.form.presets.usePrefix} ${preset.label}`}
 																						onClick={() => applyMessageTemplate(preset.message)}
 																					>
-																						Use
+																						{content.form.presets.useButton}
 																					</Button>
 																					<Button
 																						type="button"
 																						size="sm"
 																						variant="outline"
-																						aria-label={`Edit preset ${preset.label}`}
+																						aria-label={`${content.form.presets.editPrefix} ${preset.label}`}
 																						onClick={() => startEditingPreset(preset)}
 																					>
-																						Edit
+																						{content.form.presets.editButton}
 																					</Button>
 																					<Button
 																						type="button"
 																						size="sm"
 																						variant="outline"
-																						aria-label={`Delete preset ${preset.label}`}
+																						aria-label={`${content.form.presets.deletePrefix} ${preset.label}`}
 																						onClick={() => removePreset(preset.id)}
 																					>
-																						Delete
+																						{content.form.presets.deleteButton}
 																					</Button>
 																				</div>
 																			</div>
@@ -686,7 +720,7 @@ export default function LinkDropLanding() {
 																	</div>
 																) : (
 																	<p className="text-sm text-muted-foreground">
-																		Save your own repeat-use chat starters here.
+																		{content.form.presets.empty}
 																	</p>
 																)}
 															</div>
@@ -698,26 +732,26 @@ export default function LinkDropLanding() {
 									</div>
 
 									<div className="min-w-0 bg-secondary/20 px-5 py-5 sm:px-7 lg:px-8 lg:py-7">
-										<div className="flex h-full flex-col gap-5 lg:sticky lg:top-24">
-											<div className="space-y-1">
-												<p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
-													Results
-												</p>
-												<h3 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-foreground">
-													Ready to share
-												</h3>
-												<p className="text-sm leading-6 text-muted-foreground">
-													Copy the link, open it in WhatsApp, or export the matching QR code.
-												</p>
-											</div>
+											<div className="flex h-full flex-col gap-5 lg:sticky lg:top-24">
+												<div className="space-y-1">
+													<p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
+														{content.results.eyebrow}
+													</p>
+													<h3 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-foreground">
+														{content.results.title}
+													</h3>
+													<p className="text-sm leading-6 text-muted-foreground">
+														{content.results.description}
+													</p>
+												</div>
 
 											<div className="space-y-2">
-												<Label htmlFor="generated-link">Generated link</Label>
+												<Label htmlFor="generated-link">{content.results.generatedLinkLabel}</Label>
 												<Input
 													id="generated-link"
 													readOnly
 													value={generatedLink}
-													placeholder="Build a link to see the wa.me URL"
+													placeholder={content.results.generatedLinkPlaceholder}
 												/>
 											</div>
 
@@ -737,7 +771,7 @@ export default function LinkDropLanding() {
 														rel={generatedLink ? "noreferrer" : undefined}
 														aria-disabled={!generatedLink}
 													>
-														Open in WhatsApp
+														{content.results.open}
 													</a>
 												</Button>
 												<Button
@@ -747,13 +781,13 @@ export default function LinkDropLanding() {
 													onClick={downloadQrCode}
 													className="sm:col-span-2 lg:col-span-1 xl:col-span-2"
 												>
-													Download QR
+													{content.results.download}
 												</Button>
 											</div>
 
 											<div className="overflow-hidden rounded-2xl border border-border/80 bg-background/90">
 												<div className="border-b border-border/70 px-4 py-3">
-													<Badge variant="outline">Share-ready QR</Badge>
+													<Badge variant="outline">{content.results.qrBadge}</Badge>
 												</div>
 												<div className="flex min-h-72 flex-col items-center justify-center gap-4 px-4 py-5">
 													{generatedLink ? (
@@ -761,19 +795,17 @@ export default function LinkDropLanding() {
 															<div className="aspect-square w-full max-w-[14rem] rounded-xl border bg-card p-4 shadow-sm">
 																<img
 																	src={qrCodeUrl}
-																	alt="QR code for the generated WhatsApp link"
+																	alt={content.results.qrAlt}
 																	className="size-full"
 																/>
 															</div>
 															<p className="max-w-xs text-center text-sm leading-6 text-muted-foreground">
-																Download this PNG for cards, packaging, posters, or in-store
-																prompts.
+																{content.results.qrReady}
 															</p>
 														</>
 													) : (
 														<p className="max-w-xs text-center text-sm leading-6 text-muted-foreground">
-															Build a link first to preview the QR code that opens the same
-															WhatsApp chat.
+															{content.results.qrEmpty}
 														</p>
 													)}
 												</div>
@@ -791,45 +823,22 @@ export default function LinkDropLanding() {
 					<div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-5 py-16 sm:px-8 lg:py-20">
 						<div className="flex max-w-2xl flex-col gap-3">
 							<h2 className="text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
-								How to create a WhatsApp link
+								{content.howItWorks.title}
 							</h2>
 							<p className="text-base leading-7 text-muted-foreground">
-								Link Basket creates one static WhatsApp link you can share anywhere buyers
-								already find you. The generated URL uses WhatsApp&apos;s wa.me format and
-								does not require a backend.
+								{content.howItWorks.description}
 							</p>
 						</div>
 						<div className="grid gap-4 md:grid-cols-3">
-							<Card>
-								<CardHeader>
-									<Badge variant="outline">Step 1</Badge>
-									<CardTitle>Add your number</CardTitle>
-									<CardDescription>
-										Choose the country code and enter the WhatsApp number that should receive
-										buyer chats.
-									</CardDescription>
-								</CardHeader>
-							</Card>
-							<Card>
-								<CardHeader>
-									<Badge variant="outline">Step 2</Badge>
-									<CardTitle>Write the message</CardTitle>
-									<CardDescription>
-										Create the exact chat starter buyers will see, including emoji when it
-										fits your brand.
-									</CardDescription>
-								</CardHeader>
-							</Card>
-							<Card>
-								<CardHeader>
-									<Badge variant="outline">Step 3</Badge>
-									<CardTitle>Share it with buyers</CardTitle>
-									<CardDescription>
-										Copy the link, open it in WhatsApp, or download the QR code for packaging
-										and displays.
-									</CardDescription>
-								</CardHeader>
-							</Card>
+							{content.howItWorks.steps.map((step) => (
+								<Card key={step.badge}>
+									<CardHeader>
+										<Badge variant="outline">{step.badge}</Badge>
+										<CardTitle>{step.title}</CardTitle>
+										<CardDescription>{step.description}</CardDescription>
+									</CardHeader>
+								</Card>
+							))}
 						</div>
 					</div>
 				</section>
@@ -837,24 +846,22 @@ export default function LinkDropLanding() {
 				<section className="mx-auto grid w-full max-w-7xl gap-8 px-5 py-16 sm:px-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:py-20">
 					<div className="flex min-w-0 flex-col gap-3">
 						<h2 className="text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
-							What is a WhatsApp link?
+							{content.explainer.title}
 						</h2>
 						<p className="text-base leading-7 text-muted-foreground">
-							A WhatsApp link is a URL that opens a chat with a specific phone number.
-							When the link includes a text query, WhatsApp also fills the message box
-							with your chosen message so the buyer can review it and send.
+							{content.explainer.description}
 						</p>
 					</div>
 					<Card className="min-w-0">
 						<CardHeader>
-							<CardTitle>Example wa.me output</CardTitle>
+							<CardTitle>{content.explainer.exampleTitle}</CardTitle>
 							<CardDescription>
-								Link Basket keeps the generated link simple and portable.
+								{content.explainer.exampleDescription}
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
 							<code className="block max-w-full break-all rounded-md border bg-secondary/60 p-4 text-sm text-secondary-foreground">
-								https://wa.me/919876543210?text=Hi%2C%20I%20want%20to%20order%20from%20your%20catalog
+								{content.explainer.exampleLink}
 							</code>
 						</CardContent>
 					</Card>
@@ -864,41 +871,21 @@ export default function LinkDropLanding() {
 					<div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-5 py-16 sm:px-8 lg:py-20">
 						<div className="flex max-w-2xl flex-col gap-3">
 							<h2 className="text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
-								Where to use your WhatsApp link
+								{content.useCases.title}
 							</h2>
 							<p className="text-base leading-7 text-muted-foreground">
-								Use one generated link across digital and offline touchpoints so every
-								buyer starts with the same clear message.
+								{content.useCases.description}
 							</p>
 						</div>
 						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-							<Card>
-								<CardHeader>
-									<CardTitle>Seller profiles</CardTitle>
-									<CardDescription>
-										Add your WhatsApp link to Instagram bios, story stickers, marketplace
-										profiles, and saved DM replies.
-									</CardDescription>
-								</CardHeader>
-							</Card>
-							<Card>
-								<CardHeader>
-									<CardTitle>Catalogs and product posts</CardTitle>
-									<CardDescription>
-										Point buyers to a chat starter for orders, size questions, availability,
-										or delivery details.
-									</CardDescription>
-								</CardHeader>
-							</Card>
-							<Card>
-								<CardHeader>
-									<CardTitle>QR codes and print</CardTitle>
-									<CardDescription>
-										Download the QR code for flyers, packages, counters, menus, and printed
-										material that should open the same chat.
-									</CardDescription>
-								</CardHeader>
-							</Card>
+							{content.useCases.cards.map((card) => (
+								<Card key={card.title}>
+									<CardHeader>
+										<CardTitle>{card.title}</CardTitle>
+										<CardDescription>{card.description}</CardDescription>
+									</CardHeader>
+								</Card>
+							))}
 						</div>
 					</div>
 				</section>
@@ -906,63 +893,33 @@ export default function LinkDropLanding() {
 				<section id="faq" className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-5 py-16 sm:px-8 lg:py-20">
 					<div className="flex max-w-2xl flex-col gap-3">
 						<h2 className="text-3xl font-semibold tracking-normal text-foreground sm:text-4xl">
-							WhatsApp link questions
+							{content.faq.title}
 						</h2>
 						<p className="text-base leading-7 text-muted-foreground">
-							Short answers for sellers who want a direct chat link without extra setup.
+							{content.faq.description}
 						</p>
 					</div>
 					<div className="grid gap-4 md:grid-cols-2">
-						<Card>
-							<CardHeader>
-								<CardTitle>Do I need the WhatsApp Business API?</CardTitle>
-								<CardDescription>
-									No. Link Basket only creates a static wa.me link. Buyers open the link in
-									WhatsApp and send the message themselves.
-								</CardDescription>
-							</CardHeader>
-						</Card>
-						<Card>
-							<CardHeader>
-								<CardTitle>What phone number format should I use?</CardTitle>
-								<CardDescription>
-									Enter a valid WhatsApp number with the country code. Link Basket removes
-									spaces and symbols before building the final digits-only URL.
-								</CardDescription>
-							</CardHeader>
-						</Card>
-						<Card>
-							<CardHeader>
-								<CardTitle>Can I create a WhatsApp link with emoji?</CardTitle>
-								<CardDescription>
-									Yes. Add emoji in the message field and Link Basket encodes the text query
-									so the generated link stays shareable.
-								</CardDescription>
-							</CardHeader>
-						</Card>
-						<Card>
-							<CardHeader>
-								<CardTitle>Is the QR code based on the same link?</CardTitle>
-								<CardDescription>
-									Yes. The QR code is generated in your browser from the exact WhatsApp
-									link shown in the generated link field.
-								</CardDescription>
-							</CardHeader>
-						</Card>
+						{content.faq.items.map((item) => (
+							<Card key={item.question}>
+								<CardHeader>
+									<CardTitle>{item.question}</CardTitle>
+									<CardDescription>{item.answer}</CardDescription>
+								</CardHeader>
+							</Card>
+						))}
 					</div>
 				</section>
 
 				<section className="mx-auto flex w-full max-w-7xl flex-col items-start justify-between gap-6 px-5 py-14 sm:px-8 md:flex-row md:items-center">
 					<div className="flex max-w-2xl flex-col gap-2">
 						<h2 className="text-2xl font-semibold tracking-normal text-foreground sm:text-3xl">
-							Create a WhatsApp link now
+							{content.finalCta.title}
 						</h2>
-						<p className="text-muted-foreground">
-							Create a direct chat URL and place it wherever buyers are ready to ask.
-						</p>
+						<p className="text-muted-foreground">{content.finalCta.description}</p>
 					</div>
 					<Button asChild size="lg">
-						<a href="#generator">Start free</a>
+						<a href="#generator">{content.finalCta.button}</a>
 					</Button>
 				</section>
 			</main>

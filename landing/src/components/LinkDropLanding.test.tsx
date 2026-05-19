@@ -7,7 +7,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import LinkDropLanding from "./LinkDropLanding";
-import { BUILT_IN_PRESETS, STORAGE_KEY } from "@/lib/linkdrop-storage";
+import { STORAGE_KEY } from "@/lib/linkdrop-storage";
+import { getLocaleContent } from "@/lib/i18n";
 
 const toDataURLMock = vi.fn();
 
@@ -54,6 +55,12 @@ async function openTray(user: ReturnType<typeof userEvent.setup>, name: string) 
 	}
 }
 
+function renderLanding(locale: "en" | "ms" = "en") {
+	const content = getLocaleContent(locale);
+
+	return render(<LinkDropLanding locale={locale} content={content.landing} />);
+}
+
 describe("LinkDropLanding", () => {
 	beforeEach(() => {
 		toDataURLMock.mockReset();
@@ -72,7 +79,7 @@ describe("LinkDropLanding", () => {
 	it("focuses the phone input when the hero CTA is clicked", async () => {
 		const user = userEvent.setup();
 
-		render(<LinkDropLanding />);
+		renderLanding();
 
 		await user.click(screen.getAllByRole("button", { name: "Build my link" })[0]);
 
@@ -82,7 +89,7 @@ describe("LinkDropLanding", () => {
 	it("tabs from the phone input to the message field and then to emoji", async () => {
 		const user = userEvent.setup();
 
-		render(<LinkDropLanding />);
+		renderLanding();
 
 		await user.click(screen.getByLabelText("WhatsApp phone number"));
 		await user.tab();
@@ -95,7 +102,7 @@ describe("LinkDropLanding", () => {
 	it("builds the wa.me link and enables the follow-up actions", async () => {
 		const user = userEvent.setup();
 
-		render(<LinkDropLanding />);
+		renderLanding();
 
 		await user.type(screen.getByLabelText("WhatsApp phone number"), "9876543210");
 		await user.type(screen.getByLabelText("Message"), "Need the latest catalog");
@@ -127,7 +134,7 @@ describe("LinkDropLanding", () => {
 			}),
 		);
 
-		render(<LinkDropLanding />);
+		renderLanding();
 
 		expect(screen.getByLabelText("WhatsApp phone number")).toHaveValue("+91 98765 43210");
 		expect(screen.getByLabelText("Message")).toHaveValue("Need the catalog again");
@@ -138,7 +145,7 @@ describe("LinkDropLanding", () => {
 	it("adds a successfully built message to recents", async () => {
 		const user = userEvent.setup();
 
-		render(<LinkDropLanding />);
+		renderLanding();
 
 		await user.type(screen.getByLabelText("WhatsApp phone number"), "9876543210");
 		await user.type(screen.getByLabelText("Message"), "Need the latest catalog");
@@ -153,7 +160,7 @@ describe("LinkDropLanding", () => {
 	it("replaces the message from a recent item without auto-building a new link", async () => {
 		const user = userEvent.setup();
 
-		render(<LinkDropLanding />);
+		renderLanding();
 
 		const phoneInput = screen.getByLabelText("WhatsApp phone number");
 		const messageInput = screen.getByLabelText("Message");
@@ -186,25 +193,26 @@ describe("LinkDropLanding", () => {
 
 	it("applies a built-in preset without auto-building a link", async () => {
 		const user = userEvent.setup();
+		const englishPreset = getLocaleContent("en").landing.form.presets.builtIn[0];
 
-		render(<LinkDropLanding />);
+		renderLanding();
 
 		await user.type(screen.getByLabelText("WhatsApp phone number"), "9876543210");
 		await openTray(user, "Presets");
 		await user.click(
 			screen.getByRole("button", {
-				name: `Use preset ${BUILT_IN_PRESETS[0].label}`,
+				name: `Use preset ${englishPreset.label}`,
 			}),
 		);
 
-		expect(screen.getByLabelText("Message")).toHaveValue(BUILT_IN_PRESETS[0].message);
+		expect(screen.getByLabelText("Message")).toHaveValue(englishPreset.message);
 		expect(screen.getByLabelText("Generated link")).toHaveValue("");
 	});
 
 	it("creates, edits, deletes, and applies a custom preset", async () => {
 		const user = userEvent.setup();
 
-		render(<LinkDropLanding />);
+		renderLanding();
 
 		await openTray(user, "Presets");
 		await user.type(screen.getByLabelText("Preset label"), "Restock");
@@ -233,7 +241,7 @@ describe("LinkDropLanding", () => {
 	it("does not add invalid submissions to recents", async () => {
 		const user = userEvent.setup();
 
-		render(<LinkDropLanding />);
+		renderLanding();
 
 		await user.type(screen.getByLabelText("Message"), "Missing phone");
 		await user.click(screen.getAllByRole("button", { name: "Build my link" })[1]);
@@ -249,7 +257,7 @@ describe("LinkDropLanding", () => {
 			.mockResolvedValueOnce("data:image/png;base64,first")
 			.mockRejectedValueOnce(new Error("qr failed"));
 
-		render(<LinkDropLanding />);
+		renderLanding();
 
 		const phoneInput = screen.getByLabelText("WhatsApp phone number");
 		const messageInput = screen.getByLabelText("Message");
@@ -277,5 +285,21 @@ describe("LinkDropLanding", () => {
 		expect(screen.queryByAltText("QR code for the generated WhatsApp link")).not.toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Copy link" })).toBeDisabled();
 		expect(screen.getByRole("button", { name: "Download QR" })).toBeDisabled();
+	});
+
+	it("renders Malay copy and localized phone defaults", () => {
+		renderLanding("ms");
+
+		expect(
+			screen.getByRole("heading", {
+				name: "Bina pautan WhatsApp yang boleh digunakan pembeli dengan satu ketikan.",
+			}),
+		).toBeInTheDocument();
+		expect(screen.getByLabelText("Nombor telefon WhatsApp")).toHaveAttribute(
+			"placeholder",
+			"+60 12-345 6789",
+		);
+		expect(screen.getAllByRole("button", { name: "Bina pautan saya" })).toHaveLength(2);
+		expect(screen.getByRole("button", { name: "Masukkan emoji" })).toBeInTheDocument();
 	});
 });
