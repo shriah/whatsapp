@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { Value } from "react-phone-number-input";
 import { isValidPhoneNumber } from "react-phone-number-input";
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
@@ -29,46 +29,94 @@ export default function LinkDropLanding() {
 	const [customMessage, setCustomMessage] = useState("");
 	const [generatedLink, setGeneratedLink] = useState("");
 	const [qrCodeUrl, setQrCodeUrl] = useState("");
-	const [error, setError] = useState("");
+	const [buildError, setBuildError] = useState("");
 	const [copyStatus, setCopyStatus] = useState("Copy link");
-	const [missingFields, setMissingFields] = useState({
-		phone: false,
-		customMessage: false,
-	});
+	const [hasAttemptedBuild, setHasAttemptedBuild] = useState(false);
+	const [isBuilding, setIsBuilding] = useState(false);
+	const buildRequestRef = useRef(0);
+	const copyStatusTimeoutRef = useRef<number | null>(null);
+	const formRef = useRef<HTMLFormElement>(null);
+	const phoneInputRef = useRef<HTMLInputElement>(null);
 	const messageRef = useRef<HTMLTextAreaElement>(null);
+	const trimmedMessage = customMessage.trim();
+	const isPhoneMissing = hasAttemptedBuild && (!phone || !isValidPhoneNumber(phone));
+	const isMessageMissing = hasAttemptedBuild && !trimmedMessage;
+	const validationError =
+		isPhoneMissing || isMessageMissing
+			? "Add a valid WhatsApp phone number and message before building your link."
+			: "";
+	const error = buildError || validationError;
+
+	useEffect(() => {
+		return () => {
+			if (copyStatusTimeoutRef.current) {
+				window.clearTimeout(copyStatusTimeoutRef.current);
+			}
+		};
+	}, []);
+
+	function clearGeneratedOutput() {
+		setGeneratedLink("");
+		setQrCodeUrl("");
+	}
+
+	function resetCopyStatus() {
+		if (copyStatusTimeoutRef.current) {
+			window.clearTimeout(copyStatusTimeoutRef.current);
+			copyStatusTimeoutRef.current = null;
+		}
+
+		setCopyStatus("Copy link");
+	}
 
 	async function buildLink(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
-		setCopyStatus("Copy link");
-
-		const trimmedMessage = customMessage.trim();
-		const missing = {
-			phone: !phone || !isValidPhoneNumber(phone),
-			customMessage: !trimmedMessage,
-		};
-
-		setMissingFields(missing);
-
-		if (missing.phone || missing.customMessage) {
-			setError("Add a valid WhatsApp phone number and message before building your link.");
-			setGeneratedLink("");
-			setQrCodeUrl("");
+		if (isBuilding) {
 			return;
 		}
 
+		setHasAttemptedBuild(true);
+		resetCopyStatus();
+		setBuildError("");
+
+		if (!phone || !isValidPhoneNumber(phone) || !trimmedMessage) {
+			clearGeneratedOutput();
+			return;
+		}
+
+		const currentBuildRequest = buildRequestRef.current + 1;
+		buildRequestRef.current = currentBuildRequest;
 		const link = buildWhatsAppLink({
 			phone,
 			customMessage,
 		});
-		const qrCode = await QRCode.toDataURL(link, {
-			errorCorrectionLevel: "M",
-			margin: 2,
-			width: 640,
-		});
+		setIsBuilding(true);
 
-		setError("");
-		setGeneratedLink(link);
-		setQrCodeUrl(qrCode);
+		try {
+			const qrCode = await QRCode.toDataURL(link, {
+				errorCorrectionLevel: "M",
+				margin: 2,
+				width: 640,
+			});
+
+			if (buildRequestRef.current !== currentBuildRequest) {
+				return;
+			}
+
+			setGeneratedLink(link);
+			setQrCodeUrl(qrCode);
+		} catch {
+			if (buildRequestRef.current !== currentBuildRequest) {
+				return;
+			}
+
+			clearGeneratedOutput();
+			setBuildError("We couldn't generate the QR code right now. Try again.");
+		} finally {
+			if (buildRequestRef.current === currentBuildRequest) {
+				setIsBuilding(false);
+			}
+		}
 	}
 
 	function insertEmoji(emojiData: EmojiClickData) {
@@ -95,19 +143,25 @@ export default function LinkDropLanding() {
 	}
 
 	function copyLink() {
-		const value = (document.getElementById("generated-link") as HTMLInputElement | null)?.value || "";
-
-		if (!value) {
+		if (!generatedLink) {
 			return;
 		}
 
 		setCopyStatus("Copied");
-		window.setTimeout(() => setCopyStatus("Copy link"), 1800);
+		if (copyStatusTimeoutRef.current) {
+			window.clearTimeout(copyStatusTimeoutRef.current);
+		}
+		copyStatusTimeoutRef.current = window.setTimeout(() => {
+			setCopyStatus("Copy link");
+			copyStatusTimeoutRef.current = null;
+		}, 1800);
 
+		void copyToClipboard(generatedLink);
+	}
+
+	async function copyToClipboard(value: string) {
 		try {
-			void navigator.clipboard.writeText(value).catch(() => {
-				copyWithFallback(value);
-			});
+			await navigator.clipboard.writeText(value);
 		} catch {
 			copyWithFallback(value);
 		}
@@ -134,6 +188,14 @@ export default function LinkDropLanding() {
 		anchor.href = qrCodeUrl;
 		anchor.download = getQrDownloadFileName();
 		anchor.click();
+	}
+
+	function focusPhoneNumber() {
+		formRef.current?.scrollIntoView({
+			behavior: "smooth",
+			block: "start",
+		});
+		phoneInputRef.current?.focus({ preventScroll: true });
 	}
 
 	return (
@@ -172,8 +234,8 @@ export default function LinkDropLanding() {
 							</p>
 						</div>
 						<div className="flex flex-col gap-3 sm:flex-row">
-							<Button asChild size="lg">
-								<a href="#generator">Build my link</a>
+							<Button size="lg" onClick={focusPhoneNumber}>
+								Build my link
 							</Button>
 							<Button asChild variant="outline" size="lg">
 								<a href="#how-it-works">See how it works</a>
@@ -181,7 +243,7 @@ export default function LinkDropLanding() {
 						</div>
 					</div>
 
-					<form id="generator" className="scroll-mt-8" onSubmit={buildLink}>
+					<form id="generator" ref={formRef} className="scroll-mt-8" onSubmit={buildLink}>
 						<Card className="border-primary/20 bg-card/95 shadow-2xl shadow-primary/10">
 							<CardHeader>
 								<div className="flex flex-wrap items-start justify-between gap-3">
@@ -205,13 +267,14 @@ export default function LinkDropLanding() {
 								<div className="flex flex-col gap-2">
 									<Label htmlFor="phone">WhatsApp phone number</Label>
 									<PhoneInput
+										ref={phoneInputRef}
 										id="phone"
 										name="phone"
 										defaultCountry="IN"
 										value={phone}
 										onChange={setPhone}
 										placeholder="+91 98765 43210"
-										aria-invalid={missingFields.phone}
+										aria-invalid={isPhoneMissing}
 									/>
 								</div>
 
@@ -248,7 +311,7 @@ export default function LinkDropLanding() {
 										value={customMessage}
 										onChange={(event) => setCustomMessage(event.target.value)}
 										placeholder="Hi, I want to place an order from your catalog."
-										aria-invalid={missingFields.customMessage}
+										aria-invalid={isMessageMissing}
 										className="min-h-28"
 									/>
 								</div>
@@ -285,8 +348,8 @@ export default function LinkDropLanding() {
 								) : null}
 							</CardContent>
 							<CardFooter className="flex flex-col gap-3 sm:flex-row">
-								<Button className="w-full sm:w-auto" type="submit">
-									Build my link
+								<Button className="w-full sm:w-auto" type="submit" disabled={isBuilding}>
+									{isBuilding ? "Building..." : "Build my link"}
 								</Button>
 								<Button
 									className="w-full sm:w-auto"
